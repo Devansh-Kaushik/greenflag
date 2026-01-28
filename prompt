@@ -77,3 +77,43 @@ Requirements:
 - Implement LoadTestShape with shapes baseline/ramp/spike/soak selectable via SHAPE env var.
 - Validate JSON response; mark failure for 5xx; allow 4xx for invalid phones and track separately.
 - Add README commands and sample phones.csv + token.txt.
+
+
+
+
+You are a senior Performance Test Engineer. Create a production-quality Locust test suite in Python for an “ETA Deflection” API.
+
+Context:
+- Environment: SI
+- Authentication: OAuth2 client_credentials (client_id + client_secret ensuring token refresh), OR use an already-provided Bearer token from env vars.
+- Target endpoints:
+  1) POST /eta-deflection (primary) – body includes telephoneNumber (string).
+  2) (Optional) External Contacts endpoint /external-contacts (secondary) – only if enabled by a flag.
+- Config must come from environment variables (do not hardcode secrets):
+  BASE_URL, AUTH_URL, CLIENT_ID, CLIENT_SECRET, BEARER_TOKEN, TOKEN_EXPIRY(optional),
+  ETA_PATH (default “/eta-deflection”), CONTACTS_PATH (default “/external-contacts”)
+- Implement:
+  - Token manager with caching + refresh on expiry (thread-safe).
+  - Headers: Authorization Bearer token, Content-Type application/json, correlation-id (uuid).
+  - Test data feeder: telephone numbers loaded from a CSV file (numbers.csv) with fallback list.
+  - Two user classes:
+    * SmokeUser: low traffic sanity (1–2 users)
+    * LoadUser: configurable ramp (users/ spawn rate)
+  - Scenarios:
+    * Valid request (expected 200)
+    * Invalid telephoneNumber (empty/non-numeric/too short) – expected 400/422
+    * Missing auth – expected 401/403 (run in a separate task set)
+  - Use Locust’s `catch_response=True` to mark failures with clear messages:
+    * Non-2xx for positive flows
+    * Response time threshold breach (e.g., >1500ms) should be recorded as failure (but keep configurable)
+  - Add custom metrics/logging: print summary of p95, failure rate at test end.
+  - Provide README.md instructions: how to install, set env vars, run headless, and export html report.
+  - Keep code in a clean structure:
+    locustfile.py
+    auth.py
+    config.py
+    data.py
+    utils.py
+    README.md
+
+Deliver complete code for all files with comments and safe defaults.
