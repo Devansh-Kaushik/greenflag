@@ -1,0 +1,79 @@
+You are a senior Performance Test Engineer. Generate a production-quality Locust load testing suite in Python for an internal REST API called “ETA Deflection” (primary) and optionally “ETA Contacts”.
+
+Goal:
+- Validate performance, stability, and error-rate for ETA Deflection in a SI-like environment with LOW expected traffic, so design tests that still provide meaningful metrics (baseline, ramp, spike, short-soak).
+- Must be safe (no destructive actions) and configurable.
+
+Tech:
+- Use Locust (HttpUser, tasks, between, events, LoadTestShape optional).
+- Use only standard libs + locust (no extra dependencies).
+
+Inputs/Configuration (via env vars + defaults):
+- BASE_URL (required)
+- AUTH_MODE: “bearer” or “none” (default bearer)
+- AUTH_TOKEN (optional if bearer; if missing, read from token file TOKEN_FILE)
+- TOKEN_FILE default: ./token.txt
+- ENDPOINT_ETA_DEFLECTION default: /eta/deflection
+- ENDPOINT_ETA_CONTACTS default: /eta/contacts
+- PHONE_CSV default: ./phones.csv  (a CSV with header: phoneNumber)
+- REQUEST_TIMEOUT seconds default: 10
+- VERIFY_TLS: true/false default true
+- ENABLE_CONTACTS_TEST: true/false default false
+- RPS_LIMIT (optional) to throttle via wait-time logic
+- LOG_LEVEL default INFO
+
+Test data:
+- Load phone numbers from phones.csv; if file missing, fall back to a small hardcoded list.
+- Rotate phone numbers per user and per request to avoid caching bias.
+- Support tagging “valid/invalid/no-data” phone numbers by optional second column in CSV (e.g., type=valid|nodata|invalid), and choose distribution 70/20/10 if present.
+
+Requests:
+- ETA Deflection endpoint: send POST with JSON body containing at minimum phoneNumber (string). Also include correlationId (uuid4) and channel (“digital”) to mimic real calls.
+- ETA Contacts endpoint: similar payload but only runs when ENABLE_CONTACTS_TEST=true.
+
+Auth:
+- If AUTH_MODE=bearer, add header “Authorization: Bearer <token>”.
+- Add common headers: Content-Type: application/json, Accept: application/json, X-Correlation-Id: uuid4 per request.
+- Token should NOT be refreshed on every request; read once at startup.
+
+Assertions/Validation:
+- Fail the request if HTTP >= 400 (except allow expected validation errors for invalid phones; record them separately).
+- Validate response is JSON.
+- For ETA Deflection: check response contains expected keys (make minimal: etaTime or eta/etaSeconds, and a boolean flag like eligible/deflectable if present). If keys unknown, implement “soft assertions” by checking at least 1 of a list of possible keys and log missing keys.
+- Capture custom metrics: count of 2xx, 4xx, 5xx; p95 response time; error ratio.
+- Print a concise end-of-test summary to console (counts + error rate).
+
+Scenarios:
+1) Baseline: 1-3 users for 2 minutes
+2) Ramp: 1 -> 10 users over 5 minutes then hold 10 for 5 minutes
+3) Spike: jump to 25 users for 60 seconds then back to 5 users
+4) Short soak: 5 users for 10 minutes
+Implement using a LoadTestShape class that can be toggled with env var SHAPE (baseline|ramp|spike|soak). Default baseline.
+
+Reporting:
+- Use built-in Locust web UI; also write a local CSV summary file (run_id timestamped) with key stats (total requests, failures, avg, p95, p99, rps) at test stop.
+- Add logging with timestamps and correlation ids for failures only.
+
+Project structure to generate:
+- locustfile.py (main)
+- README.md with exact commands to run each shape and required env vars
+- sample phones.csv
+- sample token.txt placeholder
+
+Also include helpful comments explaining where to plug in the exact endpoint paths/body fields once confirmed by API contract.
+Make the code clean, modular, and easy to maintain (helper functions/classes).
+
+
+
+
+
+
+Generate locustfile.py for load testing an API endpoint ETA Deflection.
+Requirements:
+- Config via env vars: BASE_URL, AUTH_TOKEN, ENDPOINT_ETA_DEFLECTION (/eta/deflection), PHONE_CSV (phones.csv), REQUEST_TIMEOUT (10).
+- HttpUser posts JSON: { "phoneNumber": "<from csv>", "correlationId": "<uuid>", "channel": "digital" }.
+- Bearer auth header, plus X-Correlation-Id header.
+- Read phone numbers from CSV and rotate.
+- Implement LoadTestShape with shapes baseline/ramp/spike/soak selectable via SHAPE env var.
+- Validate JSON response; mark failure for 5xx; allow 4xx for invalid phones and track separately.
+- Add README commands and sample phones.csv + token.txt.
