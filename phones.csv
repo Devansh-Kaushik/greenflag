@@ -1,0 +1,6 @@
+telephoneNumber,scenario
+07700900001,future
+07700900002,present
+07700900003,past
+07700900999,invalid
+12345,invalid
