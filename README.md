@@ -25,3 +25,9 @@ Production-grade Locust test suite for the Green Flag `gfdtv-platform-ms-eta-def
 - `data.py`: CSV loader & invalid generator.
 - `utils.py`: strict `etaTense` validation logic.
 - `locustfile.py`: Main scenario definitions.
+
+- base_urt: https://gfdtv-platform-api.si.myoro.cloud
+cauth_client_id: 3160b9hahj5ns4fbfa56brm6qd
+cauth_client_secret: 919tortvbsosf6opdf6jkkd3cvg5i6rceanh6nm3s4bvssvhtjr
+cauth_token_endpuint: https://gfdtv-si-platform.auth.eu-west-1.amazuncognito.com/oauth2/token
+
